@@ -36,4 +36,31 @@ library(ggplot2)
 # --------------------------------------------------------------------------------------------
 # Load in relevant data
 
-setwd("c:/Users/nathanielpayne/Documents/DeVry") # Set the main working directory
+# Set the main working directory to load in the data (switch to make this local)
+setwd("C:/Users/nathanielpayne.CPATHAD/Dropbox/Data") # Set the main working directory
+
+# Dataset 1 = Gradebook
+gradebook <- read.csv("gradebook.csv", sep = ",", header = TRUE)
+
+# Review the imported data
+head(gradebook) # Review the gradebook names
+colnames(gradebook) # Review the gradebook
+
+# Need to change the gradebook headings
+colnames(gradebook) <- c("student_id", "ass_1_40", "assi_2_40", "proj1_100", "assi_3_40", "assi_4_40", 
+                         "proj2_100", "assi_5_40", "assi_6_40", "proj3_100", "final_exam_100", 
+                         "peer_feedback_15", "final_course_grade")
+
+str(gradebook) # Review the structure of the data
+head(gradebook) # Review the gradebook
+
+# Review a histogram of grades
+jpeg('final_course_grade_histogram.jpg')
+hist(gradebook$final_course_grade, 
+     breaks = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100), 
+     freq = TRUE, 
+     main = "Histogram of Final Course Grades",
+     xlab = "Final Course Grade",
+     ylab = "Frequency",
+     col = "Red")
+dev.off() # Turn off
