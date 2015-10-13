@@ -76,21 +76,39 @@ def convert_survey_data(header, data):
     #this list represents the indexes to be converted to a binary representation
     category_indexes = [1] + range(5, 18, 1) + range(19, 22, 1)
 
+
+    #label encoder converts categories to numerical values
     label_encoder = LabelEncoder()
     
+    #loop through all the columns that are categorical data and convert
     for i in category_indexes:
         label_encoder.fit(data[ : , i])
         data[ : , i] = label_encoder.fit_transform(data[ : , i])
 
+    #convert the data to floats
+    data = data.astype(np.float)
+
     #the OneHotEncoder converts categorical data to binary representations
-    #encoder = OneHotEncoder(categorical_features = category_indexes)
+    encoder = OneHotEncoder(categorical_features = category_indexes)
 
-    #TODO convert the data
-    converted_data = data
-    #converted_data = encoder.transform(data).toarray()
+    #convert the data
+    converted_data = encoder.fit_transform(data).toarray()
+    
+    #the one hot encoder puts new columns on the low end of the array, so lets put them back
+    converted_columns = converted_data.shape[1] - data.shape[1] + len(category_indexes)
+    converted_data = np.hstack((converted_data[ : , converted_columns :], converted_data[ : , : converted_columns]))
 
-    #TODO convert the header
-    converted_header = header
+    #convert the header to represent the transformed data
+    unconverted_indexes = np.array([i not in category_indexes for i in range(len(header))])
+    converted_header = header[unconverted_indexes]
+
+    #add the new category names to the header
+    for i in category_indexes:
+        for j in range(data[ : , i].astype(np.int).max()):
+            if(j == 0):
+                converted_header = np.append(converted_header, header[i])
+            else:
+                converted_header = np.append(converted_header, header[i] + str(j))
 
     return converted_header, converted_data
 
