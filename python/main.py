@@ -181,6 +181,27 @@ def main():
     print("Decision tree accuracy = %f" % accuracy)
 
 
+    print("\n\n--------------------------")
+    print("k - Nearest Neighbors")
+    print("--------------------------")
+
+    #create knn range
+    knn_param = {'n_neighbors': range(1, 20), 'weights': ['uniform', 'distance'], 'p': [1, 2], 'algorithm' : ['auto'], 'metric': ['euclidean']} #, 'manhattan', 'chebyshev', 'minkowski', 'wminkowski', 'seuclidean', 'mahalanobis']}
+
+    #run the knn
+    prediction, accuracy = classifiers.run_k_nearest_neighbors(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = knn_param)
+    print("k-NN accuracy = %f" % accuracy)
+
+    print("\n\n--------------------------")
+    print("SVM")
+    print("--------------------------")
+
+    #create svm range
+    svm_param = {'kernel': ['rbf', 'linear', 'poly', 'sigmoid'], 'C': [1e0, 5e0, 1e1, 5e1, 1e2, 5e2], 'degree': [1, 2, 3, 4], 'gamma': [0.0, 0.0001, 0.0005, 0.001]}
+
+    #run the svm
+    prediction, accuracy = classifiers.run_support_vector_machines(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svm_param)
+    print("SVM accuracy = %f" % accuracy)
 
 
     return
