@@ -54,7 +54,7 @@ colnames(gradebook) <- c("student_id", "ass_1_40", "assi_2_40", "proj1_100", "as
 str(gradebook) # Review the structure of the data
 head(gradebook) # Review the gradebook
 
-# Review a histogram of grades
+# Review a histogram of grades (Note the skewness)
 jpeg('final_course_grade_histogram.jpg')
 hist(gradebook$final_course_grade, 
      breaks = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100), 
