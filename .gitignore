@@ -1,3 +1,4 @@
 *.pyproj
 python/euclid.v12.suo
 *.sln
+*.pyc
