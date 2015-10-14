@@ -232,15 +232,15 @@ def run_support_vector_machines(training_features, training_labels, test_feature
     estimator = svm.SVC(kernel = classifier.best_estimator_.kernel, C = classifier.best_estimator_.C, gamma = classifier.best_estimator_.gamma, degree = classifier.best_estimator_.degree)
 
     #plot the learning curve
-    title = 'Learning Curves (SVM, kernel=%s degree=%i gamma=%f C=%i )' % (kernel, classifier.best_estimator_.degree, classifier.best_estimator_.gamma, classifier.best_estimator_.C)
+    title = 'Learning Curves (SVM, kernel=%s degree=%i gamma=%f C=%i )' % (classifier.best_estimator_.kernel, classifier.best_estimator_.degree, classifier.best_estimator_.gamma, classifier.best_estimator_.C)
     plot_learning_curve(estimator, title, training_features, training_labels, cv=cv)
-    save_file_name = 'Learning Curves - SVM - %s.png' % kernel
+    save_file_name = 'Learning Curves - SVM.png'
     pylab.savefig(os.path.join(results_location, save_file_name))
     #plt.show()
 
     time_3 = time.time()
 
-    if(kernel == 'linear'):
+    if(classifier.best_estimator_.kernel == 'linear'):
         coefficients = classifier.estimator.coef_
         print('\n\n-----------------------')
         print(' Coefficients')
