@@ -34,7 +34,7 @@ library(aod)
 library(ggplot2)
 
 # --------------------------------------------------------------------------------------------
-# Load in relevant data
+# Load in the initial test gradebook data
 
 # Set the main working directory to load in the data (switch to make this local)
 setwd("C:/Users/nathanielpayne.CPATHAD/Dropbox/Data") # Set the main working directory
@@ -64,3 +64,25 @@ hist(gradebook$final_course_grade,
      ylab = "Frequency",
      col = "Red")
 dev.off() # Turn off
+
+# --------------------------------------------------------------------------------------------
+# Load in the full gradebook data
+
+# --------------------------------------------------------------------------------------------
+# Complete summary analysis on the data & generate final initial graphs
+
+# --------------------------------------------------------------------------------------------
+# Determine the final dataset to be worked on for modelling
+
+# --------------------------------------------------------------------------------------------
+# --------------------------------  Move section to a new program ----------------------------
+# --------------------------------------------------------------------------------------------
+# Split the dataset into 20 / 80 test / train datasets
+
+# --------------------------------------------------------------------------------------------
+# Fit the data using all subsets regression, ridge regression, the LASSO, random forest, neural network
+# Basic regression tree models (use all subsets and the LASSO for variable selection)
+
+# --------------------------------------------------------------------------------------------
+# Analyze the resulting output & test significance
+
