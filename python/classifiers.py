@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 import time
 import pylab
 import os
@@ -96,7 +96,7 @@ def run_decision_tree(training_features, training_labels, test_features, test_la
 
     return test_prediction, test_accuracy
 
-def run_neural_net(training_features, training_labels, test_features, test_labels, hidden_units = 1, training_epochs = 50, training_iterations = 1000):
+def run_neural_net(training_features, training_labels, test_features, test_labels):
     """
     Classifies the data using pybrain's neural net
 
