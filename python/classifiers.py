@@ -2,21 +2,26 @@
 import time
 import pylab
 import os
+import math
+import pydot
 
 from sklearn import tree, neighbors, svm
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.learning_curve import learning_curve
+from sklearn.externals.six import StringIO  
 
 from sklearn.cross_validation import ShuffleSplit
 from sklearn.grid_search import GridSearchCV
 from plot_learning_curve import plot_learning_curve, plot_validation_curve, plot_learning_curve_iter
 
-
+#use sknn for neural net
+#sklearn friendly wrapper around pylearn2
+import sknn.mlp as mlp_nn
 
 data_location = "../Data" # read data from os.path.join(data_location, <filename>)
 results_location = "Results" # save results text/graph to os.path.join(results_location, <filename>)
 
-def run_decision_tree(training_features, training_labels, test_features, test_labels, passed_parameters = None):
+def run_decision_tree(training_features, training_labels, test_features, test_labels, passed_parameters = None, headings = None):
     """
     Classifies the data using sklearn's decision tree 
     Does not natively support pruning so max_depth is being used
@@ -67,12 +72,19 @@ def run_decision_tree(training_features, training_labels, test_features, test_la
 
     #show the best result
     estimator = tree.DecisionTreeClassifier(max_depth = classifier.best_estimator_.max_depth, criterion = classifier.best_estimator_.criterion)
-    
+    estimator.fit(training_features, training_labels)
+
     #plot the learning curve
     title = 'Learning Curves \n(Decision Tree, max depth=%i)' %classifier.best_estimator_.max_depth
     plot_learning_curve(estimator, title, training_features, training_labels, cv=cv)
     pylab.savefig(os.path.join(results_location, 'Learning Curves - Decision Tree.png'))
     #plt.show()
+
+    #save the visualization of the decision tree only use the top 5 levels for now
+    tree_data = StringIO() 
+    tree.export_graphviz(estimator, out_file=tree_data, max_depth=5, feature_names=headings)
+    graph = pydot.graph_from_dot_data(tree_data.getvalue()) 
+    graph.write_pdf(os.path.join(results_location, "Decision Tree Model.pdf")) 
 
     time_3 = time.time()
 

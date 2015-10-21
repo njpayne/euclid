@@ -149,7 +149,7 @@ def main():
 
     #first use the category for training and use the rest as features except for period code
     #select_columns = ["names", "of", "columns"]
-    select_columns = header
+    select_columns = np.take(header, [0] + range(10, len(header)))
 
     #select the appropriate columns
     selected_header, selected_data = select_data_columns(header, data, select_columns)
@@ -177,7 +177,7 @@ def main():
     decision_tree_param = {'max_depth': range(1, 200, 10), 'criterion' : ["entropy", "gini"]}
 
     #run the decision tree
-    prediction, accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
+    prediction, accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
     print("Decision tree accuracy = %f" % accuracy)
 
 
