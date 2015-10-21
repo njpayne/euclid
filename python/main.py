@@ -74,8 +74,8 @@ def convert_survey_data(header, data):
     """
 
     #this list represents the indexes to be converted to a binary representation
-    category_indexes = [1] + range(5, 18, 1) + range(19, 22, 1)
-
+    #category_indexes = [1] + range(5, 18, 1) + range(19, 22, 1)
+    category_indexes = [10,11,12,13,14,15,16,17,18,19,20,40,41,42,43,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,76,77,78,79,80,89,90,91,92,93,94,95,96,97,98,99]
 
     #label encoder converts categories to numerical values
     label_encoder = LabelEncoder()
@@ -145,17 +145,17 @@ def select_data_columns(header, data, column_names = []):
 def main():
 
     #load the data from the csv
-    header, data = load_data("sample_survey_data.csv", conversion_function = convert_survey_data, max_records = None)
+    header, data = load_data("basic_data.csv", conversion_function = convert_survey_data, max_records = None)
 
     #first use the category for training and use the rest as features except for period code
     #select_columns = ["names", "of", "columns"]
-    select_columns = header
+    select_columns = np.take(header, [0] + range(10, len(header)))
 
     #select the appropriate columns
     selected_header, selected_data = select_data_columns(header, data, select_columns)
 
     #have scikit partition the data into training and test sets
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(selected_data[ : , 1 : ], selected_data[ : ,  : 1], test_size=0.2, random_state=0)
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(selected_data[ : , 1 : ], selected_data[ : ,  : 1], test_size=0.15, random_state=0)
 
     #create the scaler the data based on the training data
     #this is used to scale values to 0 mean and unit variance
@@ -177,7 +177,7 @@ def main():
     decision_tree_param = {'max_depth': range(1, 200, 10), 'criterion' : ["entropy", "gini"]}
 
     #run the decision tree
-    prediction, accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
+    prediction, accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
     print("Decision tree accuracy = %f" % accuracy)
 
 
@@ -203,6 +203,13 @@ def main():
     prediction, accuracy = classifiers.run_support_vector_machines(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svm_param)
     print("SVM accuracy = %f" % accuracy)
 
+    print("\n\n--------------------------")
+    print("Neural Net")
+    print("--------------------------")
+
+    #run the neural net
+    prediction, accuracy = classifiers.run_neural_net(X_train, y_train.flatten(), X_test, y_test.flatten())
+    print("Neural Net accuracy = %f" % accuracy)
 
     return
 
