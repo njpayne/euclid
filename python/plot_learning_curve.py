@@ -1,4 +1,4 @@
-##
+﻿##
 ##code borrowed from:
 ##http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html 
 ##and http://scikit-learn.org/stable/auto_examples/model_selection/plot_validation_curve.html
@@ -9,8 +9,8 @@ from sklearn import cross_validation
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.datasets import load_digits
-from sklearn.learning_curve import learning_curve
-from sklearn.learning_curve import validation_curve
+from sklearn.learning_curve import learning_curve, validation_curve
+from sklearn.metrics import zero_one_loss
 import math
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
@@ -129,3 +129,38 @@ def plot_validation_curve(estimator, X, y, title, param_name, param_range, cv = 
 
     plt.legend(loc="best")
     return plt
+
+def plot_adaclassifier(classifier, n_estimators, X_train, X_test, y_train, y_test):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    #ax.plot([1, n_estimators], [dt_stump_err] * 2, 'k-',
+    #        label='Decision Stump Error')
+    #ax.plot([1, n_estimators], [dt_err] * 2, 'k--',
+    #        label='Decision Tree Error')
+
+    ada_err_test = np.zeros((n_estimators,))
+    for i, y_pred in enumerate(classifier.staged_predict(X_test)):
+        ada_err_test[i] = zero_one_loss(y_pred, y_test)
+
+    ada_err_train = np.zeros((n_estimators,))
+    for i, y_pred in enumerate(classifier.staged_predict(X_train)):
+        ada_err_train[i] = zero_one_loss(y_pred, y_train)
+
+    ax.plot(np.arange(n_estimators) + 1, ada_err_test,
+            label='AdaBoost Test Error',
+            color='red')
+    ax.plot(np.arange(n_estimators) + 1, ada_err_train,
+            label='AdaBoost Train Error',
+            color='blue')
+
+    ax.set_ylim((0.0, 1.0))
+    ax.set_xlabel('n_estimators')
+    ax.set_ylabel('error rate')
+
+    leg = ax.legend(loc='upper right', fancybox=True)
+    leg.get_frame().set_alpha(0.7)
+
+
+    return fig
