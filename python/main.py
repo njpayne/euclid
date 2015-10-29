@@ -142,11 +142,100 @@ def select_data_columns(header, data, column_names = []):
 
     return (sliced_header, sliced_data)
 
-def main():
+def run_classifiers(X_train, y_train, X_test, y_test, header):
+    print("------------------")
+    print("Running Classifiers")
+    print("------------------")
 
-    #load the data from the csv
-    header, data = load_data("basic_data.csv", conversion_function = convert_survey_data, max_records = None)
+    print("\n\n--------------------------")
+    print("Decision Trees")
+    print("--------------------------")
 
+    #create decision tree range
+    decision_tree_param = {'max_depth': range(1, 200, 10), 'criterion' : ["entropy", "gini"]}
+
+    #run the decision tree
+    prediction, decision_tree_accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
+    print("Decision tree accuracy = %f" % decision_tree_accuracy)
+
+
+    print("\n\n--------------------------")
+    print("Boosting")
+    print("--------------------------")
+
+    #create boosting range
+    boosting_param = {'base_estimator__max_depth': range(1, 3), 'n_estimators' : [10, 20], 'learning_rate' : [.75, 1.0] }
+
+    #run the boosting
+    prediction, boosting_accuracy = classifiers.run_boosting(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = boosting_param)
+    print("Boosting accuracy = %f" % boosting_accuracy)
+
+
+    print("\n\n--------------------------")
+    print("k - Nearest Neighbors")
+    print("--------------------------")
+
+
+    #create knn range
+    knn_param = {'n_neighbors': range(1, 20), 'weights': ['uniform', 'distance'], 'p': [1, 2], 'algorithm' : ['auto'], 'metric': ['euclidean']} #, 'manhattan', 'chebyshev', 'minkowski', 'wminkowski', 'seuclidean', 'mahalanobis']}
+
+    #run the knn
+    prediction, knn_accuracy = classifiers.run_k_nearest_neighbors(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = knn_param)
+    print("k-NN accuracy = %f" % knn_accuracy)
+
+    print("\n\n--------------------------")
+    print("SVM")
+    print("--------------------------")
+
+    #create svm range
+    svm_param = {'kernel': ['rbf', 'linear', 'poly', 'sigmoid'], 'C': [1e0, 5e0, 1e1, 5e1, 1e2, 5e2], 'degree': [1, 2, 3, 4], 'gamma': [0.0, 0.0001, 0.0005, 0.001]}
+
+    #run the svm
+    prediction, svm_accuracy = classifiers.run_support_vector_machines(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svm_param)
+    print("SVM accuracy = %f" % svm_accuracy)
+
+    print("\n\n--------------------------")
+    print("Neural Net")
+    print("--------------------------")
+
+    #run the neural net
+    prediction, nn_accuracy = classifiers.run_neural_net(X_train, y_train.flatten(), X_test, y_test.flatten())
+    print("Neural Net accuracy = %f" % nn_accuracy)
+    
+    
+    return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy, nn_accuracy)
+
+def individual_feature_testing(header, data):
+
+    classifier_results = []
+
+    #run through each variable and see if anything has an impact
+    for i in range(10, len(header)):
+        select_columns = np.take(header, [0, i])
+
+        #select the appropriate columns
+        selected_header, selected_data = select_data_columns(header, data, select_columns)
+
+        #have scikit partition the data into training and test sets
+        X_train, X_test, y_train, y_test = cross_validation.train_test_split(selected_data[ : , 1 : ], selected_data[ : ,  : 1], test_size=0.15, random_state=0)
+
+        #create the scaler the data based on the training data
+        #this is used to scale values to 0 mean and unit variance
+        data_scaler = StandardScaler().fit(X_train.astype(np.float32))
+
+        #scale training and test set to mean 0 with unit variance
+        X_train = data_scaler.transform(X_train.astype(np.float32))
+        X_test = data_scaler.transform(X_test.astype(np.float32))
+
+        print("Testing Feature - %s" % select_columns[1])
+
+        best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
+
+        classifier_results.append((selected_header[1], best_classifier))
+
+    return 
+
+def test_all_features(header, data):
     #first use the category for training and use the rest as features except for period code
     #select_columns = ["names", "of", "columns"]
     select_columns = np.take(header, [0] + range(10, len(header)))
@@ -165,51 +254,19 @@ def main():
     X_train = data_scaler.transform(X_train.astype(np.float32))
     X_test = data_scaler.transform(X_test.astype(np.float32))
 
-    print("------------------")
-    print("Running Classifiers")
-    print("------------------")
+    best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
 
-    print("\n\n--------------------------")
-    print("Decision Trees")
-    print("--------------------------")
+    return
 
-    #create decision tree range
-    decision_tree_param = {'max_depth': range(1, 200, 10), 'criterion' : ["entropy", "gini"]}
+def main():
+    #load the data from the csv
+    header, data = load_data("basic_data.csv", conversion_function = convert_survey_data, max_records = None)
 
-    #run the decision tree
-    prediction, accuracy = classifiers.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
-    print("Decision tree accuracy = %f" % accuracy)
+    #test all to start
+    test_all_features(header, data)
 
-
-    print("\n\n--------------------------")
-    print("k - Nearest Neighbors")
-    print("--------------------------")
-
-    #create knn range
-    knn_param = {'n_neighbors': range(1, 20), 'weights': ['uniform', 'distance'], 'p': [1, 2], 'algorithm' : ['auto'], 'metric': ['euclidean']} #, 'manhattan', 'chebyshev', 'minkowski', 'wminkowski', 'seuclidean', 'mahalanobis']}
-
-    #run the knn
-    prediction, accuracy = classifiers.run_k_nearest_neighbors(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = knn_param)
-    print("k-NN accuracy = %f" % accuracy)
-
-    print("\n\n--------------------------")
-    print("SVM")
-    print("--------------------------")
-
-    #create svm range
-    svm_param = {'kernel': ['rbf', 'linear', 'poly', 'sigmoid'], 'C': [1e0, 5e0, 1e1, 5e1, 1e2, 5e2], 'degree': [1, 2, 3, 4], 'gamma': [0.0, 0.0001, 0.0005, 0.001]}
-
-    #run the svm
-    prediction, accuracy = classifiers.run_support_vector_machines(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svm_param)
-    print("SVM accuracy = %f" % accuracy)
-
-    print("\n\n--------------------------")
-    print("Neural Net")
-    print("--------------------------")
-
-    #run the neural net
-    prediction, accuracy = classifiers.run_neural_net(X_train, y_train.flatten(), X_test, y_test.flatten())
-    print("Neural Net accuracy = %f" % accuracy)
+    #loop through all features individually
+    #individual_feature_testing(header, data)
 
     return
 
