@@ -12,7 +12,7 @@ from sklearn.metrics import zero_one_loss
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
-import classifiers
+import classifiers, clustering
 
 data_location = "../Data" # read data from os.path.join(data_location, <filename>)
 results_location = "Results" # save results text/graph to os.path.join(results_location, <filename>)
@@ -74,8 +74,8 @@ def convert_survey_data(header, data):
     """
 
     #this list represents the indexes to be converted to a binary representation
-    #category_indexes = [1] + range(5, 18, 1) + range(19, 22, 1)
-    category_indexes = [10,11,12,13,14,15,16,17,18,19,20,40,41,42,43,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,76,77,78,79,80,89,90,91,92,93,94,95,96,97,98,99]
+    #category_indexes = [10,11,12,13,14,15,16,17,18,19,20,40,41,42,43,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,76,77,78,79,80,89,90,91,92,93,94,95,96,97,98,99]
+    category_indexes = np.argwhere([not classifiers.is_number(data[0, i]) for i in range(data.shape[1])]).astype(np.int).flatten().tolist()
 
     #label encoder converts categories to numerical values
     label_encoder = LabelEncoder()
@@ -253,6 +253,16 @@ def test_all_features(header, data):
     #scale training and test set to mean 0 with unit variance
     X_train = data_scaler.transform(X_train.astype(np.float32))
     X_test = data_scaler.transform(X_test.astype(np.float32))
+
+    #remove low variance features
+    cleaned_data = clustering.clean_features(np.vstack((X_train, X_test)))
+    
+    #select the best features using univatiate selection
+    selected_features, feature_uni_scores = clustering.univariate_selection(cleaned_data, np.vstack((y_train, y_test)))
+
+    #grab the best columns based on the univariate test
+    #best_feature_index = np.argsort(-feature_uni_scores)[:20]
+    best_feature_index = np.argsort(-feature_uni_scores)[:]
 
     best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
 
