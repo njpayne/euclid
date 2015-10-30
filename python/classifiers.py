@@ -5,14 +5,14 @@ import os
 import math
 import pydot
 
-from sklearn import tree, neighbors, svm
+from sklearn import tree, neighbors, svm, ensemble
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.learning_curve import learning_curve
 from sklearn.externals.six import StringIO  
 
 from sklearn.cross_validation import ShuffleSplit
 from sklearn.grid_search import GridSearchCV
-from plot_learning_curve import plot_learning_curve, plot_validation_curve, plot_learning_curve_iter
+from plot_learning_curve import plot_learning_curve, plot_validation_curve, plot_learning_curve_iter, plot_adaclassifier
 
 #use sknn for neural net
 #sklearn friendly wrapper around pylearn2
