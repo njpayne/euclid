@@ -7,7 +7,7 @@ import pylab
 data_location = "../Data" # read data from os.path.join(data_location, <filename>)
 results_location = "Results" # save results text/graph to os.path.join(results_location, <filename>)
 
-def clean_features(data, **kwargs):
+def clean_features(data, header, **kwargs):
 
     #extract parameters
     min_feature_variance = kwargs.get('min_feature_variance', .8 * (1 - .8))
@@ -15,8 +15,14 @@ def clean_features(data, **kwargs):
     #remove features with variance below the threshold
     feature_selector = feature_selection.VarianceThreshold(threshold=min_feature_variance)
     reduced_data = feature_selector.fit_transform(data)
+    
+    #create a mask of features selected
+    mask = feature_selector.get_support(indices = True)
 
-    return reduced_data
+    #select the same indexes from the header
+    reduced_header = np.take(header, mask)
+
+    return reduced_data, reduced_header
 
 def univariate_selection(features, labels, **kwargs):
 
@@ -68,11 +74,6 @@ def univariate_selection(features, labels, **kwargs):
     pylab.savefig(os.path.join(results_location, "Univariate Selection %d Features" % n_best))
 
     return tranformed_data, feature_scores
-
-def forest_importance(data, **kwargs):
-
-
-    return
 
 def pca_reduce(data, **kwargs):
 

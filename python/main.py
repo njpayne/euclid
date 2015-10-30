@@ -142,6 +142,27 @@ def select_data_columns(header, data, column_names = []):
 
     return (sliced_header, sliced_data)
 
+def divide_for_training(data):
+    ##first use the category for training and use the rest as features except for period code
+    ##select_columns = ["names", "of", "columns"]
+    #select_columns = header 
+
+    ##select the appropriate columns
+    #selected_header, selected_data = select_data_columns(header, data, select_columns)
+
+    #have scikit partition the data into training and test sets
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(data[ : , 1 : ], data[ : ,  : 1], test_size=0.15, random_state=0)
+
+    #create the scaler the data based on the training data
+    #this is used to scale values to 0 mean and unit variance
+    data_scaler = StandardScaler().fit(X_train.astype(np.float32))
+
+    #scale training and test set to mean 0 with unit variance
+    X_train = data_scaler.transform(X_train.astype(np.float32))
+    X_test = data_scaler.transform(X_test.astype(np.float32))
+
+    return X_train, X_test, y_train, y_test
+
 def run_classifiers(X_train, y_train, X_test, y_test, header):
     print("------------------")
     print("Running Classifiers")
@@ -194,65 +215,26 @@ def run_classifiers(X_train, y_train, X_test, y_test, header):
     prediction, svm_accuracy = classifiers.run_support_vector_machines(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svm_param)
     print("SVM accuracy = %f" % svm_accuracy)
 
-    print("\n\n--------------------------")
-    print("Neural Net")
-    print("--------------------------")
+    #print("\n\n--------------------------")
+    #print("Neural Net")
+    #print("--------------------------")
 
-    #run the neural net
-    prediction, nn_accuracy = classifiers.run_neural_net(X_train, y_train.flatten(), X_test, y_test.flatten())
-    print("Neural Net accuracy = %f" % nn_accuracy)
+    ##run the neural net
+    #prediction, nn_accuracy = classifiers.run_neural_net(X_train, y_train.flatten(), X_test, y_test.flatten())
+    #print("Neural Net accuracy = %f" % nn_accuracy)
     
-    
-    return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy, nn_accuracy)
+    #return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy, nn_accuracy)
+    return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy)
 
-def individual_feature_testing(header, data):
+def run_regressors(X_train, y_train, X_test, y_test, header):
 
-    classifier_results = []
 
-    #run through each variable and see if anything has an impact
-    for i in range(10, len(header)):
-        select_columns = np.take(header, [0, i])
 
-        #select the appropriate columns
-        selected_header, selected_data = select_data_columns(header, data, select_columns)
+    return
 
-        #have scikit partition the data into training and test sets
-        X_train, X_test, y_train, y_test = cross_validation.train_test_split(selected_data[ : , 1 : ], selected_data[ : ,  : 1], test_size=0.15, random_state=0)
-
-        #create the scaler the data based on the training data
-        #this is used to scale values to 0 mean and unit variance
-        data_scaler = StandardScaler().fit(X_train.astype(np.float32))
-
-        #scale training and test set to mean 0 with unit variance
-        X_train = data_scaler.transform(X_train.astype(np.float32))
-        X_test = data_scaler.transform(X_test.astype(np.float32))
-
-        print("Testing Feature - %s" % select_columns[1])
-
-        best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
-
-        classifier_results.append((selected_header[1], best_classifier))
-
-    return 
 
 def test_all_features(header, data):
-    #first use the category for training and use the rest as features except for period code
-    #select_columns = ["names", "of", "columns"]
-    select_columns = np.take(header, [0] + range(10, len(header)))
 
-    #select the appropriate columns
-    selected_header, selected_data = select_data_columns(header, data, select_columns)
-
-    #have scikit partition the data into training and test sets
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(selected_data[ : , 1 : ], selected_data[ : ,  : 1], test_size=0.15, random_state=0)
-
-    #create the scaler the data based on the training data
-    #this is used to scale values to 0 mean and unit variance
-    data_scaler = StandardScaler().fit(X_train.astype(np.float32))
-
-    #scale training and test set to mean 0 with unit variance
-    X_train = data_scaler.transform(X_train.astype(np.float32))
-    X_test = data_scaler.transform(X_test.astype(np.float32))
 
     #remove low variance features
     cleaned_data = clustering.clean_features(np.vstack((X_train, X_test)))
@@ -264,13 +246,66 @@ def test_all_features(header, data):
     #best_feature_index = np.argsort(-feature_uni_scores)[:20]
     best_feature_index = np.argsort(-feature_uni_scores)[:]
 
+    #reselect the features
+    top_features = 10
+    X_train, X_test = np.take(X_train, best_feature_index[ : 10], axis = 1), np.take(X_test, best_feature_index[ : 10], axis = 1)
     best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
+
+    #try the PCA reduction
+    reduced_data = clustering.pca_reduce(cleaned_data, n_components = 2)
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(reduced_data, np.vstack((y_train, y_test)), test_size=0.15, random_state=0)
+
+    best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
+
+    return
+
+def feature_reduction(header, data, is_classification = True):
+
+    #remove low variance features
+    data_lvar_removed, header_lvar_removed = clustering.clean_features(data, header, min_feature_variance = .8 * (1 - .8))
+
+    #create training/test sets
+    X_train, X_test, y_train, y_test = divide_for_training(data_lvar_removed)
+
+    #select the best features using univatiate selection
+    selected_features, feature_uni_scores = clustering.univariate_selection(np.vstack((X_train, X_test)), np.vstack((y_train, y_test)), n_best = 3, is_regression = not is_classification)
+
+    #determine the order of the univariate features
+    best_feature_index = np.argsort(-feature_uni_scores)
+
+    #reselect the features
+    top_features = 10
+    X_train_uni, X_test_uni = np.take(X_train, best_feature_index[ : top_features], axis = 1), np.take(X_test, best_feature_index[ : top_features], axis = 1)
+    header_uni = np.take(header_lvar_removed, best_feature_index[ : top_features])
+
+    #try the PCA reduction
+    data_pca = clustering.pca_reduce(np.vstack((X_train, X_test)), n_components = top_features)
+    X_train_pca, X_test_pca, y_train_pca, y_test_pca = divide_for_training(np.hstack((np.vstack((y_train, y_test)), data_pca)))
+
+    if(is_classification):
+        #run the classifiers and find the best result
+        best_classifier_uni = run_classifiers(X_train_uni, y_train, X_test_uni, y_test, header_uni)
+        best_classifier_pca = run_classifiers(X_train_pca, y_train_pca, X_test_pca, y_test_pca, header_lvar_removed)
+    else:
+        best_regressor_uni = run_regressors(X_train_uni, y_train, X_test_uni, y_test, header_uni)
+        best_regressor_pca = run_regressors(X_train_pca, y_train_pca, X_test_pca, y_test_pca, header_lvar_removed)
 
     return
 
 def main():
     #load the data from the csv
     header, data = load_data("basic_data.csv", conversion_function = convert_survey_data, max_records = None)
+
+    #remove the grades to set up for classification
+    classification_header = np.take(header, [0] + range(10, len(header)))
+    classification_data = np.take(data, [0] + range(10, len(header)), axis = 1)
+
+    #remove the grades to set up for regression
+    regression_header = np.take(header, [1] + range(10, len(header)))
+    regression_data = np.take(data, [1] + range(10, len(header)), axis = 1)
+
+    #run feature reduction
+    feature_reduction(classification_header, classification_data, is_classification = True)
 
     #test all to start
     test_all_features(header, data)
