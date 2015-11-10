@@ -107,7 +107,15 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer):
     prediction, rand_forest_accuracy = regressors.run_random_forest(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
     print("Random forest accuracy = %f" % rand_forest_accuracy)
 
-    best_regressor = max(decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy)
+    #run the linear regressor
+    prediction, linear_accuracy = regressors.run_linear_regression(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
+    print("Linear Regressor accuracy = %f" % linear_accuracy)
+
+    #run svr
+    svr_parameters = {'kernel' : ['rbf', 'poly', 'linear', 'sigmoid']}
+    prediction, svr_accuracy = regressors.run_support_vector_regressor(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = svr_parameters)
+
+    best_regressor = max(decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy)
 
     #set up label to 
     if(header.shape[0] > 1):
@@ -116,7 +124,7 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer):
         feature = [header[-1]]
 
     
-    cvs_writer.writerow(feature + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy])
+    cvs_writer.writerow(feature + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy])
 
     return best_regressor
 
@@ -174,6 +182,9 @@ def main():
 
     #target categories
     select_columns = ['course_grade', 'mid_on_piazza', 'final_on_piazza', 'lecture_18_views', 'lecture_20_views', 'lecture_21_views', 'highest_education_High School', 'qtr_proj1_confidence_No Answer', 'qtr_proj1_confidence_Very unconfident', 'qtr_proj2_confidence_No Answer', 'qtr_piazza_opinion_No Answer', 'qtr_peerfeedback_opinion_No Answer', 'mid_proj2_confidence_No answer', 'mid_proj3_confidence_No answer', 'mid_piazza_opinion_No answer', 'mid_peerfeedback_opinion_No answer', 'final_proj3_confidence_No answer', 'final_proj3_confidence_Somewhat confident', 'hours_spent_No answer', 'lessons_watched_All 26', 'lessons_watched_No answer', 'exercises_completed_All of them', 'exercises_completed_No answer', 'forum_visit_frequency_No answer', 'watch_out_order_No Answer', 'fall_behind_No Answer', 'get_ahead_No Answer', 'rewatch_full_lesson_No Answer', 'rewatch_partial_lesson_No Answer', 'view_answer_after_1incorrect_No Answer', 'repeat_exercise_until_correct_No Answer', 'skip_exercise_No Answer', 'correct_first_attempt_4 - Frequently', 'correct_first_attempt_No Answer', 'access_from_mobile_Never', 'access_from_mobile_No Answer', 'download_videos_No Answer', 'lecture_11_pace_Unknown', 'lecture_12_pace_Unknown', 'lecture_13_pace_Unknown', 'lecture_14_pace_Early', 'lecture_14_pace_Unknown', 'lecture_15_pace_Unknown', 'lecture_16_pace_Unknown', 'lecture_17_pace_Unknown', 'lecture_18_pace_Unknown', 'lecture_19_pace_Unknown', 'lecture_20_pace_Unknown', 'lecture_21_pace_Unknown', 'lecture_22_pace_Unknown', 'lecture_23_pace_Unknown', 'lecture_24_pace_Unknown', 'lecture_25_pace_Early', 'lecture_25_pace_Unknown', 'lecture_26_pace_Early', 'lecture_26_pace_Unknown', 'overall_pace_Unknown']
+    #select_columns = ['course_grade', 'mid_on_piazza', 'final_on_piazza']
+
+
 
     #select the appropriate columns
     header_subset, data_subset = data_work.select_data_columns(header, data, column_names = select_columns)
@@ -192,7 +203,7 @@ def main():
         X_train, X_test = data_work.scale_features(X_train, X_test)
 
         #create headings
-        writer.writerow(["Feature", "Decision Tree", "Boosting", "Random Forest"]) 
+        writer.writerow(["Feature", "Decision Tree", "Boosting", "Random Forest", "Linear Regression", "Support Vector Machine"]) 
 
         #test all to start
         run_regressors(X_train, y_train, X_test, y_test, header_subset, writer)

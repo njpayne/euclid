@@ -6,12 +6,12 @@ import math
 import pydot
 import matplotlib.pyplot as plt
 
-from sklearn import tree, neighbors, svm, ensemble
+from sklearn import tree, neighbors, svm, ensemble, linear_model, svm
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.learning_curve import learning_curve
 from sklearn.externals.six import StringIO  
 
-from sklearn.cross_validation import ShuffleSplit
+from sklearn.cross_validation import ShuffleSplit, cross_val_predict, cross_val_score
 from sklearn.grid_search import GridSearchCV
 from plot_learning_curve import plot_learning_curve, plot_validation_curve, plot_learning_curve_iter, plot_adaclassifier
 
@@ -147,3 +147,57 @@ def run_random_forest(training_features, training_labels, test_features, test_la
 
     return test_prediction, test_accuracy
 
+def run_linear_regression(training_features, training_labels, test_features, test_labels, passed_parameters = None):
+    
+
+    #set up linear regressor
+    estimator = linear_model.LinearRegression(fit_intercept = True)
+
+    ##create cross validation iterator
+    #cv = ShuffleSplit(training_features.shape[0], n_iter=5, test_size=0.2, random_state=0)
+
+    estimator.fit(training_features, training_labels)
+
+    prediction = estimator.predict(X = training_features)
+    score = estimator.score(X = training_features, y = training_labels)
+
+    if(training_features.shape[1] == 1):
+
+        fig, ax = plt.subplots()
+        ax.scatter(training_labels, prediction)
+        ax.plot([training_labels.min(), training_labels.max()], [training_labels.min(), training_labels.max()], 'k--', lw=4)
+        ax.set_xlabel('Measured')
+        ax.set_ylabel('Predicted')
+        plt.show()
+
+    return prediction, score
+
+def run_support_vector_regressor(training_features, training_labels, test_features, test_labels, passed_parameters = None):
+    
+    estimator = svm.SVR()
+
+    #set up parameters for the classifier
+    if(passed_parameters == None):
+        parameters = {'kernel': ['linear']}
+    else:
+        parameters = passed_parameters
+
+    #create cross validation iterator
+    cv = ShuffleSplit(training_features.shape[0], n_iter=5, test_size=0.2, random_state=0)
+
+    #set up tuning algorithm
+    regressor = GridSearchCV(estimator=estimator, cv=cv, param_grid=parameters)
+
+    #fit the classifier
+    regressor.fit(training_features, training_labels)
+
+    test_prediction = regressor.predict(test_features)
+    test_accuracy = regressor.score(test_features, test_labels)
+
+    time_2 = time.time()
+
+    #show the best result
+    estimator = svm.SVR(kernel = regressor.best_estimator_.kernel)
+    estimator.fit(training_features, training_labels)
+
+    return test_prediction, test_accuracy
