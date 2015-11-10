@@ -72,8 +72,10 @@ def convert_survey_data(header, data):
     label_encoder = LabelEncoder()
     
     #loop through all the columns that are categorical data and convert
+    encoder_indexes = []
     for i in category_indexes:
         label_encoder.fit(data[ : , i])
+        encoder_indexes.append(label_encoder.classes_)
         data[ : , i] = label_encoder.fit_transform(data[ : , i])
 
     #convert the data to floats
@@ -95,11 +97,10 @@ def convert_survey_data(header, data):
 
     #add the new category names to the header
     for i in category_indexes:
+        #get the encoding labels
+        category_labels = encoder_indexes[np.argwhere(np.array(category_indexes) == i)]
         for j in range(data[ : , i].astype(np.int).max() + 1):
-            if(j == 0):
-                converted_header = np.append(converted_header, header[i])
-            else:
-                converted_header = np.append(converted_header, header[i] + str(j))
+            converted_header = np.append(converted_header, np.array([header[i] + "_" + category_labels[j]]))
 
     return converted_header, converted_data
 
