@@ -4,164 +4,21 @@ import math
 import os
 import csv
 
-from sklearn import cross_validation
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler #used to convert categories to one of k 
+import data_work
+
+#from sklearn import cross_validation
+#from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler #used to convert categories to one of k 
 from sklearn.cross_validation import ShuffleSplit
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import zero_one_loss
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
-import classifiers, clustering
+import classifiers, clustering, regressors
 
 data_location = "../Data" # read data from os.path.join(data_location, <filename>)
 results_location = "Results" # save results text/graph to os.path.join(results_location, <filename>)
 
-def load_data(filename, conversion_function = None, max_records = None):
-    """
-    Loads the data from a csv
-
-    Parameters
-    ----------
-        filename: name of csv file to be read in the data_location folder
-    
-    Returns
-    -------
-        (header, data): tuple of lists, a list of data headings and a list of data
-    """
-    
-    header = []
-    data = []
-
-    #open the csv file
-    with open(os.path.join(data_location, filename), 'rb') as csvfile:
-        #read each line
-        for line in csvfile.readlines():
-            line_data = line.strip().split(',')
-            #assume the first line is the header.  Add to the heading list
-            if(len(header) == 0):
-                header = line_data
-            #otherwise add to the data list
-            else:
-                data.append(line_data)
-
-    #just so we have a random set sort then subset
-    if(max_records is not None and len(data) >= max_records):
-        random.shuffle(data)
-        data = data[ : max_records + 1]
-
-    #convert to a numpy array
-    header, data = np.array(header), np.array(data)
-
-    #convert the data to categories
-    if(conversion_function is not None):
-        header, data = conversion_function(header, data)
-
-    return (header, data)
-
-def convert_survey_data(header, data):
-    """
-    Converts data from survey to usable form for analysis
-
-    Parameters
-    ----------
-        data: the raw survey data
-    
-    Returns
-    -------
-        converted_data: the survey data after conversion      
-
-    """
-
-    #this list represents the indexes to be converted to a binary representation
-    #category_indexes = [10,11,12,13,14,15,16,17,18,19,20,40,41,42,43,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,76,77,78,79,80,89,90,91,92,93,94,95,96,97,98,99]
-    category_indexes = np.argwhere([not classifiers.is_number(data[0, i]) for i in range(data.shape[1])]).astype(np.int).flatten().tolist()
-
-    #label encoder converts categories to numerical values
-    label_encoder = LabelEncoder()
-    
-    #loop through all the columns that are categorical data and convert
-    for i in category_indexes:
-        label_encoder.fit(data[ : , i])
-        data[ : , i] = label_encoder.fit_transform(data[ : , i])
-
-    #convert the data to floats
-    data = data.astype(np.float)
-
-    #the OneHotEncoder converts categorical data to binary representations
-    encoder = OneHotEncoder(categorical_features = category_indexes)
-
-    #convert the data
-    converted_data = encoder.fit_transform(data).toarray()
-    
-    #the one hot encoder puts new columns on the low end of the array, so lets put them back
-    converted_columns = converted_data.shape[1] - data.shape[1] + len(category_indexes)
-    converted_data = np.hstack((converted_data[ : , converted_columns :], converted_data[ : , : converted_columns]))
-
-    #convert the header to represent the transformed data
-    unconverted_indexes = np.array([i not in category_indexes for i in range(len(header))])
-    converted_header = header[unconverted_indexes]
-
-    #add the new category names to the header
-    for i in category_indexes:
-        for j in range(data[ : , i].astype(np.int).max()):
-            if(j == 0):
-                converted_header = np.append(converted_header, header[i])
-            else:
-                converted_header = np.append(converted_header, header[i] + str(j))
-
-    return converted_header, converted_data
-
-def select_data_columns(header, data, column_names = []):
-    """
-    Selects the columns from the data based on the column_name list
-    If header is not found, no data is added
-
-    Parameters
-    ----------
-        header: data's header list
-        data: list of the data to be split
-        column_names: names of columns to be returned, checked against header file
-    
-    Returns
-    -------
-        sliced_header: headers that matched the column_names list
-        sliced_data: data that matched the column_names list
-    """
-
-    column_indexes = []
-
-    #get the index of the columns that match
-    for i in range(len(column_names)):
-        for j in range(len(header)):
-            if(header[j] == column_names[i]):
-                column_indexes.append(j)
-
-    sliced_header = np.take(header, column_indexes, axis = 0)
-    sliced_data = np.take(data, column_indexes, axis = 1)
-
-    return (sliced_header, sliced_data)
-
-def divide_for_training(data):
-    ##first use the category for training and use the rest as features except for period code
-    ##select_columns = ["names", "of", "columns"]
-    #select_columns = header 
-
-    ##select the appropriate columns
-    #selected_header, selected_data = select_data_columns(header, data, select_columns)
-
-    #have scikit partition the data into training and test sets
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(data[ : , 1 : ], data[ : ,  : 1], test_size=0.15, random_state=0)
-
-    #create the scaler the data based on the training data
-    #this is used to scale values to 0 mean and unit variance
-    data_scaler = StandardScaler().fit(X_train.astype(np.float32))
-
-    #scale training and test set to mean 0 with unit variance
-    X_train = data_scaler.transform(X_train.astype(np.float32))
-    X_test = data_scaler.transform(X_test.astype(np.float32))
-
-    return X_train, X_test, y_train, y_test
 
 def run_classifiers(X_train, y_train, X_test, y_test, header):
     print("------------------")
@@ -226,38 +83,42 @@ def run_classifiers(X_train, y_train, X_test, y_test, header):
     #return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy, nn_accuracy)
     return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy)
 
-def run_regressors(X_train, y_train, X_test, y_test, header):
+def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer):
+    print("------------------")
+    print("Running Regressors")
+    print("------------------")
 
+    print("\n\n--------------------------")
+    print("Decision Trees")
+    print("--------------------------")
 
+    #create decision tree range
+    decision_tree_param = {'max_depth': range(1, 200, 10)}
 
-    return
+    #run the decision tree
+    prediction, decision_tree_accuracy = regressors.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
+    print("Decision tree accuracy = %f" % decision_tree_accuracy)
 
+    #run the adaboost regressor
+    prediction, boosting_accuracy = regressors.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
+    print("Boosting accuracy = %f" % boosting_accuracy)
 
-def test_all_features(header, data):
+    #run the random forest regressor
+    prediction, rand_forest_accuracy = regressors.run_random_forest(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
+    print("Random forest accuracy = %f" % rand_forest_accuracy)
 
+    best_regressor = max(decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy)
 
-    #remove low variance features
-    cleaned_data = clustering.clean_features(np.vstack((X_train, X_test)))
+    #set up label to 
+    if(header.shape[0] > 1):
+        feature = ["Multi"]
+    else:
+        feature = [header[-1]]
+
     
-    #select the best features using univatiate selection
-    selected_features, feature_uni_scores = clustering.univariate_selection(cleaned_data, np.vstack((y_train, y_test)))
+    cvs_writer.writerow(feature + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy])
 
-    #grab the best columns based on the univariate test
-    #best_feature_index = np.argsort(-feature_uni_scores)[:20]
-    best_feature_index = np.argsort(-feature_uni_scores)[:]
-
-    #reselect the features
-    top_features = 10
-    X_train, X_test = np.take(X_train, best_feature_index[ : 10], axis = 1), np.take(X_test, best_feature_index[ : 10], axis = 1)
-    best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
-
-    #try the PCA reduction
-    reduced_data = clustering.pca_reduce(cleaned_data, n_components = 2)
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(reduced_data, np.vstack((y_train, y_test)), test_size=0.15, random_state=0)
-
-    best_classifier = run_classifiers(X_train, y_train, X_test, y_test, selected_header)
-
-    return
+    return best_regressor
 
 def feature_reduction(header, data, is_classification = True):
 
@@ -273,45 +134,72 @@ def feature_reduction(header, data, is_classification = True):
     #determine the order of the univariate features
     best_feature_index = np.argsort(-feature_uni_scores)
 
+    best_results = []
+  
     #reselect the features
-    top_features = 10
+    top_features = 12
     X_train_uni, X_test_uni = np.take(X_train, best_feature_index[ : top_features], axis = 1), np.take(X_test, best_feature_index[ : top_features], axis = 1)
     header_uni = np.take(header_lvar_removed, best_feature_index[ : top_features])
 
-    #try the PCA reduction
-    data_pca = clustering.pca_reduce(np.vstack((X_train, X_test)), n_components = top_features)
-    X_train_pca, X_test_pca, y_train_pca, y_test_pca = divide_for_training(np.hstack((np.vstack((y_train, y_test)), data_pca)))
+    ##try the PCA reduction
+    #data_pca = clustering.pca_reduce(np.vstack((X_train, X_test)), n_components = top_features)
+    #X_train_pca, X_test_pca, y_train_pca, y_test_pca = divide_for_training(np.hstack((np.vstack((y_train, y_test)), data_pca)))
+
+    ##try the ICA reduction
+    #data_ica = clustering.ica_reduce(np.vstack((X_train, X_test)), n_components = top_features)
+    #X_train_ica, X_test_ica, y_train_ica, y_test_ica = divide_for_training(np.hstack((np.vstack((y_train, y_test)), data_ica)))
+
+    #try recursive reduction
+    data_recursive = clustering.recursive_reduce(np.vstack((X_train, X_test)), np.vstack((y_train, y_test)).flatten(), is_regression = not is_classification)
+    X_train_recursive, X_test_recursive, y_train_recursive, y_test_recursive = divide_for_training(np.hstack((np.vstack((y_train, y_test)), data_ica)))
 
     if(is_classification):
         #run the classifiers and find the best result
-        best_classifier_uni = run_classifiers(X_train_uni, y_train, X_test_uni, y_test, header_uni)
+        #best_classifier_uni = run_classifiers(X_train_uni, y_train, X_test_uni, y_test, header_uni)
         best_classifier_pca = run_classifiers(X_train_pca, y_train_pca, X_test_pca, y_test_pca, header_lvar_removed)
     else:
-        best_regressor_uni = run_regressors(X_train_uni, y_train, X_test_uni, y_test, header_uni)
-        best_regressor_pca = run_regressors(X_train_pca, y_train_pca, X_test_pca, y_test_pca, header_lvar_removed)
+        #best_regressor_uni = run_regressors(X_train_uni, y_train, X_test_uni, y_test, header_uni)
+        #best_regressor_pca = run_regressors(X_train_pca, y_train_pca, X_test_pca, y_test_pca, header_lvar_removed)
+        #best_regressor_ica = run_regressors(X_train_ica, y_train_ica, X_test_ica, y_test_ica, header_lvar_removed)
+        best_regressor_recursive = run_regressors(X_train_recursive, y_train_recursive, X_test_recursive, y_test_recursive, header_lvar_removed)
+        best_results.append(max(best_regressor_ica, best_regressor_pca, best_regressor_uni))
+
+
 
     return
 
 def main():
     #load the data from the csv
-    header, data = load_data("basic_data.csv", conversion_function = convert_survey_data, max_records = None)
+    header, data = data_work.load_data("basic_data.csv", conversion_function = data_work.convert_survey_data, max_records = None)
 
-    #remove the grades to set up for classification
-    classification_header = np.take(header, [0] + range(10, len(header)))
-    classification_data = np.take(data, [0] + range(10, len(header)), axis = 1)
+    #target categories
+    select_columns = ['course_grade', 'mid_on_piazza', 'final_on_piazza', 'lecture_18_views', 'lecture_20_views', 'lecture_21_views', 'highest_education_High School', 'qtr_proj1_confidence_No Answer', 'qtr_proj1_confidence_Very unconfident', 'qtr_proj2_confidence_No Answer', 'qtr_piazza_opinion_No Answer', 'qtr_peerfeedback_opinion_No Answer', 'mid_proj2_confidence_No answer', 'mid_proj3_confidence_No answer', 'mid_piazza_opinion_No answer', 'mid_peerfeedback_opinion_No answer', 'final_proj3_confidence_No answer', 'final_proj3_confidence_Somewhat confident', 'hours_spent_No answer', 'lessons_watched_All 26', 'lessons_watched_No answer', 'exercises_completed_All of them', 'exercises_completed_No answer', 'forum_visit_frequency_No answer', 'watch_out_order_No Answer', 'fall_behind_No Answer', 'get_ahead_No Answer', 'rewatch_full_lesson_No Answer', 'rewatch_partial_lesson_No Answer', 'view_answer_after_1incorrect_No Answer', 'repeat_exercise_until_correct_No Answer', 'skip_exercise_No Answer', 'correct_first_attempt_4 - Frequently', 'correct_first_attempt_No Answer', 'access_from_mobile_Never', 'access_from_mobile_No Answer', 'download_videos_No Answer', 'lecture_11_pace_Unknown', 'lecture_12_pace_Unknown', 'lecture_13_pace_Unknown', 'lecture_14_pace_Early', 'lecture_14_pace_Unknown', 'lecture_15_pace_Unknown', 'lecture_16_pace_Unknown', 'lecture_17_pace_Unknown', 'lecture_18_pace_Unknown', 'lecture_19_pace_Unknown', 'lecture_20_pace_Unknown', 'lecture_21_pace_Unknown', 'lecture_22_pace_Unknown', 'lecture_23_pace_Unknown', 'lecture_24_pace_Unknown', 'lecture_25_pace_Early', 'lecture_25_pace_Unknown', 'lecture_26_pace_Early', 'lecture_26_pace_Unknown', 'overall_pace_Unknown']
 
-    #remove the grades to set up for regression
-    regression_header = np.take(header, [1] + range(10, len(header)))
-    regression_data = np.take(data, [1] + range(10, len(header)), axis = 1)
+    #select the appropriate columns
+    header_subset, data_subset = data_work.select_data_columns(header, data, column_names = select_columns)
 
-    #run feature reduction
-    feature_reduction(classification_header, classification_data, is_classification = True)
+    #create csv for results
+    with open(os.path.join(results_location, 'regression_results.csv'), 'wb') as output_file:
 
-    #test all to start
-    test_all_features(header, data)
+        #establish the csv writer
+        writer = csv.writer(output_file, delimiter=',')
 
-    #loop through all features individually
-    #individual_feature_testing(header, data)
+        #first run on the full set
+        #assumes first column is Y
+        X_train, X_test, y_train, y_test = data_work.divide_for_training(data_subset)
+
+        #scale the data
+        X_train, X_test = data_work.scale_features(X_train, X_test)
+
+        #create headings
+        writer.writerow(["Feature", "Decision Tree", "Boosting", "Random Forest"]) 
+
+        #test all to start
+        run_regressors(X_train, y_train, X_test, y_test, header_subset, writer)
+
+        for i in range(0, X_train.shape[1]):
+            run_regressors(X_train[:, i,np.newaxis], y_train, X_test[:, i,np.newaxis], y_test, header_subset[i + 1, np.newaxis], writer)
+
 
     return
 
