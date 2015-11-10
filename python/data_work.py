@@ -3,6 +3,7 @@ import os
 import csv
 import numpy as np
 
+from sklearn import cross_validation
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler #used to convert categories to one of k 
 
 data_location = "../Data" # read data from os.path.join(data_location, <filename>)
@@ -134,15 +135,19 @@ def select_data_columns(header, data, column_names = []):
 
     return (sliced_header, sliced_data)
 
-def scale_features(data):
+def scale_features(data, test_data = None):
 
     #create the scaler the data based on the training data
     #this is used to scale values to 0 mean and unit variance
     data_scaler = StandardScaler().fit(data.astype(np.float32))
-
     scaled_data = data_scaler.transform(data)
 
-    return scaled_data
+    if(test_data is None):
+        return scaled_data
+    else:
+        scaled_test_data = data_scaler.transform(test_data)    
+
+    return scaled_data, scaled_test_data
 
 def divide_for_training(data):
     ##first use the category for training and use the rest as features except for period code
