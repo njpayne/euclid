@@ -119,7 +119,7 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer, run_nam
 
     best_regressor = max(decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy)
     
-    cvs_writer.writerow([run_name] + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy])
+    cvs_writer.writerow([run_name] + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy] + [""] + header)
 
     return best_regressor
 
@@ -196,26 +196,29 @@ def main():
         #"basic_data_piazza_only_finishers"
         ]
 
-    for data_source in data_sources:
 
-        print("\n\n------------------")
-        print("Data Set - %s" % data_source)
-        print("------------------")
-
-        #load the data from the csv
-        header, data = data_work.load_data(data_source + ".csv", conversion_function = data_work.convert_survey_data, max_records = None)
-
-        #create csv for results
-        with open(os.path.join(results_location, 'regression_results_' + data_source + '.csv'), 'wb') as output_file:
+    #create csv for results
+    with open(os.path.join(results_location, 'regression_results.csv'), 'wb') as output_file:
             
-            #establish the csv writer
-            writer = csv.writer(output_file, delimiter=',')
-            
+        #establish the csv writer
+        writer = csv.writer(output_file, delimiter=',')
+
+        for data_source in data_sources:
+
+            print("\n\n------------------")
+            print("Data Set - %s" % data_source)
+            print("------------------")
+
             #this section determines R^2 scores of the regressors
             writer.writerow(["R^2 Scores"])
 
+            writer.writerow(["Dataset - %s" % data_source] )
+
+            #load the data from the csv
+            header, data = data_work.load_data(data_source + ".csv", conversion_function = data_work.convert_survey_data, max_records = None)
+
             #create headings
-            writer.writerow(["Feature", "Decision Tree", "Boosting", "Random Forest", "Linear Regression", "Support Vector Machine"]) 
+            writer.writerow(["Feature", "Decision Tree", "Boosting", "Random Forest", "Linear Regression", "Support Vector Machine", "", "Feature Details"]) 
 
             #loop through all the feature set combos
             for feature_set_name, select_columns in feature_dict.iteritems():
