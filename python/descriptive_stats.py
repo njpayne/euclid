@@ -13,7 +13,7 @@ results_location = "Results" # save results text/graph to os.path.join(results_l
 def main():
 
     #run the two datasets
-    data_sets = ["basic_data", "basic_data_only_finishers"]
+    data_sets = ["basic_data", "basic_data_only_finishers", "basic_data_clean_lecture", "basic_data_piazza",  "basic_data_piazza_only_finishers"]
 
     for data_set in data_sets:
 
@@ -78,12 +78,13 @@ def draw_charts(data, headings, data_set):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    #just plot vs course grades
     for i in range(data.shape[1]):
-        for j in range(data.shape[1]):
+        for j in np.argwhere(headings == "course_grade")[0].tolist():
 
             #no need to test against itself
             #or earlier combos
-            if(j > i):
+            if(j != i):
                 x_values = data[ : , i]
                 y_values = data[ : , j]
 
@@ -104,6 +105,8 @@ def draw_charts(data, headings, data_set):
                 save_name = save_name.replace(">", "gt")
                 save_name = save_name.replace("\\", "")
                 save_name = save_name.replace("/", "")
+                save_name = save_name.replace(".", "")
+                save_name = save_name.replace("I have not used Piazza significantly", "")
 
                 pylab.savefig(os.path.join(os.getcwd(),"Results",data_set,save_name))
 
