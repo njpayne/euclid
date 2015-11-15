@@ -14,6 +14,8 @@ from sklearn.metrics import zero_one_loss
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import PolynomialFeatures
+import matplotlib.pyplot as plt
+import pylab
 
 import classifiers, clustering, regressors
 
@@ -84,6 +86,22 @@ def run_classifiers(X_train, y_train, X_test, y_test, header):
     #return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy, nn_accuracy)
     return  max(decision_tree_accuracy, boosting_accuracy, knn_accuracy, svm_accuracy)
 
+def plot_residual_vs_fit(y_act, y_pred, r_value, name):
+
+    #make a scatterplot
+    plt.figure()
+    plt.scatter(y_pred, y_act - y_pred)
+    plt.xlabel("Fitted Value")
+    plt.ylabel("Residual")
+    plt.text(x = 25, y = 45, s = "R^2: %.3f" % r_value)
+    plt.title("Residuals " + name)
+    plt.axhline(0, color= 'b', linestyle='-')
+    pylab.savefig(os.path.join(os.getcwd(),"Results","Residual Plots",name))
+
+    plt.close()
+
+    return
+
 def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer, run_name = ""):
 
     print("\nRun Name = %s" % run_name)
@@ -94,6 +112,7 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer, run_nam
     #run the decision tree
     prediction, decision_tree_accuracy = regressors.run_decision_tree(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header, title = run_name)
     print("Decision tree accuracy = %f" % decision_tree_accuracy)
+    plot_residual_vs_fit(y_test.flatten(), prediction, decision_tree_accuracy, "Decision Tree %s" % run_name)
 
     #create adaboost range
     adaboost_parameters = {'base_estimator__max_depth': range(1, 5), 'n_estimators' : [100], 'learning_rate' : [1] }
@@ -101,14 +120,17 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer, run_nam
     #run the adaboost regressor
     prediction, boosting_accuracy = regressors.run_boosting(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = adaboost_parameters)
     print("Boosting accuracy = %f" % boosting_accuracy)
+    plot_residual_vs_fit(y_test.flatten(), prediction, boosting_accuracy, "Adaboost %s" % run_name)
 
     #run the random forest regressor
     prediction, rand_forest_accuracy = regressors.run_random_forest(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param)
     print("Random forest accuracy = %f" % rand_forest_accuracy)
+    plot_residual_vs_fit(y_test.flatten(), prediction, rand_forest_accuracy, "Random Forest %s" % run_name)
 
     #run the linear regressor
     prediction, linear_accuracy = regressors.run_linear_regression(X_train, y_train.flatten(), X_test, y_test.flatten(), passed_parameters = decision_tree_param, headings = header)
     print("Linear Regressor accuracy = %f" % linear_accuracy)
+    plot_residual_vs_fit(y_test.flatten(), prediction, linear_accuracy, "Linear Regression %s" % run_name)
 
     ##run svr
     #svr_parameters = {'kernel' : ['rbf', 'poly', 'linear', 'sigmoid'], 'degree' : [2, 3, 4, 5, 6, 7, 8, 9, 10]}
@@ -119,7 +141,7 @@ def run_regressors(X_train, y_train, X_test, y_test, header, cvs_writer, run_nam
 
     best_regressor = max(decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy)
     
-    cvs_writer.writerow([run_name] + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy] + [""] + header)
+    cvs_writer.writerow([run_name] + [decision_tree_accuracy, boosting_accuracy, rand_forest_accuracy, linear_accuracy, svr_accuracy] + [""] + header.tolist())
 
     return best_regressor
 
@@ -178,22 +200,22 @@ def main():
     #select the appropriate columns
     feature_dict = {
         #"Full" : header.tolist(),
-        #"Lecture Views" : ['overal_lecture_views', 'total_lecture_time'],
-        #"Piazza Use" : ['mid_on_piazza', 'final_on_piazza', 'piazza_posts', 'piazza_days', 'piazza_views'],
-        #"Lecture Pace" : ['lecture_1_pace_Late', 'lecture_1_pace_On-time', 'lecture_1_pace_Unknown', 'lecture_2_pace_Late', 'lecture_2_pace_On-time', 'lecture_2_pace_Unknown', 'lecture_3_pace_Late', 'lecture_3_pace_On-time', 'lecture_3_pace_Unknown', 'lecture_4_pace_Early', 'lecture_4_pace_Late', 'lecture_4_pace_On-time', 'lecture_4_pace_Unknown', 'lecture_5_pace_Early', 'lecture_5_pace_Late', 'lecture_5_pace_On-time', 'lecture_5_pace_Unknown', 'lecture_6_pace_Early', 'lecture_6_pace_Late', 'lecture_6_pace_On-time', 'lecture_6_pace_Unknown', 'lecture_7_pace_Early', 'lecture_7_pace_Late', 'lecture_7_pace_On-time', 'lecture_7_pace_Unknown', 'lecture_8_pace_Early', 'lecture_8_pace_Late', 'lecture_8_pace_On-time', 'lecture_8_pace_Unknown', 'lecture_9_pace_Early', 'lecture_9_pace_Late', 'lecture_9_pace_On-time', 'lecture_9_pace_Unknown', 'lecture_10_pace_Early', 'lecture_10_pace_Late', 'lecture_10_pace_On-time', 'lecture_10_pace_Unknown', 'lecture_11_pace_Early', 'lecture_11_pace_Late', 'lecture_11_pace_On-time', 'lecture_11_pace_Unknown', 'lecture_12_pace_Early', 'lecture_12_pace_Late', 'lecture_12_pace_On-time', 'lecture_12_pace_Unknown', 'lecture_13_pace_Early', 'lecture_13_pace_Late', 'lecture_13_pace_On-time', 'lecture_13_pace_Unknown', 'lecture_14_pace_Early', 'lecture_14_pace_Late', 'lecture_14_pace_On-time', 'lecture_14_pace_Unknown', 'lecture_15_pace_Early', 'lecture_15_pace_Late', 'lecture_15_pace_On-time', 'lecture_15_pace_Unknown', 'lecture_16_pace_Early', 'lecture_16_pace_Late', 'lecture_16_pace_On-time', 'lecture_16_pace_Unknown', 'lecture_17_pace_Early', 'lecture_17_pace_Late', 'lecture_17_pace_On-time', 'lecture_17_pace_Unknown', 'lecture_18_pace_Early', 'lecture_18_pace_Late', 'lecture_18_pace_On-time', 'lecture_18_pace_Unknown', 'lecture_19_pace_Early', 'lecture_19_pace_Late', 'lecture_19_pace_On-time', 'lecture_19_pace_Unknown', 'lecture_20_pace_Early', 'lecture_20_pace_Late', 'lecture_20_pace_On-time', 'lecture_20_pace_Unknown', 'lecture_21_pace_Early', 'lecture_21_pace_Late', 'lecture_21_pace_On-time', 'lecture_21_pace_Unknown', 'lecture_22_pace_Early', 'lecture_22_pace_Late', 'lecture_22_pace_On-time', 'lecture_22_pace_Unknown', 'lecture_23_pace_Early', 'lecture_23_pace_Late', 'lecture_23_pace_On-time', 'lecture_23_pace_Unknown', 'lecture_24_pace_Early', 'lecture_24_pace_Late', 'lecture_24_pace_On-time', 'lecture_24_pace_Unknown', 'lecture_25_pace_Early', 'lecture_25_pace_Late', 'lecture_25_pace_On-time', 'lecture_25_pace_Unknown', 'lecture_26_pace_Early', 'lecture_26_pace_Late', 'lecture_26_pace_On-time', 'lecture_26_pace_Unknown', 'overall_pace_Early', 'overall_pace_Late', 'overall_pace_On-time', 'overall_pace_Unknown'],
-        #"Classmate Contact" : ['qtr_on_piazza', 'qtr_email', 'qtr_hipchat', 'qrt_gplus', 'qtr_other_chat', 'qtr_phone', 'qtr_facebook', 'qtr_in_person', 'mid_on_piazza', 'mid_email', 'mid_hipchat', 'qrt_gplus', 'mid_other_chat', 'mid_phone', 'mid_facebook', 'mid_in_person', 'final_on_piazza', 'final_email', 'final_hipchat', 'qrt_gplus', 'final_other_chat', 'final_phone', 'final_facebook', 'final_in_person'],
-        #"Lecture Amount" : ['total_lecture_time', 'overal_lecture_views', 'lecture_1_views', 'lecture_2_views', 'lecture_3_views', 'lecture_4_views', 'lecture_5_views', 'lecture_6_views', 'lecture_7_views', 'lecture_8_views', 'lecture_9_views', 'lecture_10_views', 'lecture_11_views', 'lecture_12_views', 'lecture_13_views', 'lecture_14_views', 'lecture_15_views', 'lecture_16_views', 'lecture_17_views', 'lecture_18_views', 'lecture_19_views', 'lecture_20_views', 'lecture_21_views', 'lecture_22_views', 'lecture_23_views', 'lecture_24_views', 'lecture_25_views', 'lecture_26_views'],
-        #"Prior Experience" : ['formal_class_prog_taken', 'C', 'C#', 'C++', 'Java', 'JavaScript', 'Lisp', 'Objective C', 'Perl', 'PHP', 'Python', 'Ruby', 'Shell', 'Swift', 'Visual Basic', 'Other (specify below)', 'years_programming', 'prior_omscs_classes_completed', 'occupation', 'highest_education', 'besides_KBAI_how_many_classes', 'moocs_completed_outside_OMSCS'],
+        "Lecture Views" : ['overal_lecture_views', 'total_lecture_time'],
+        "Piazza Use" : ['mid_on_piazza', 'final_on_piazza', 'piazza_posts', 'piazza_days', 'piazza_views'],
+        "Lecture Pace" : ['lecture_1_pace_Late', 'lecture_1_pace_On-time', 'lecture_1_pace_Unknown', 'lecture_2_pace_Late', 'lecture_2_pace_On-time', 'lecture_2_pace_Unknown', 'lecture_3_pace_Late', 'lecture_3_pace_On-time', 'lecture_3_pace_Unknown', 'lecture_4_pace_Early', 'lecture_4_pace_Late', 'lecture_4_pace_On-time', 'lecture_4_pace_Unknown', 'lecture_5_pace_Early', 'lecture_5_pace_Late', 'lecture_5_pace_On-time', 'lecture_5_pace_Unknown', 'lecture_6_pace_Early', 'lecture_6_pace_Late', 'lecture_6_pace_On-time', 'lecture_6_pace_Unknown', 'lecture_7_pace_Early', 'lecture_7_pace_Late', 'lecture_7_pace_On-time', 'lecture_7_pace_Unknown', 'lecture_8_pace_Early', 'lecture_8_pace_Late', 'lecture_8_pace_On-time', 'lecture_8_pace_Unknown', 'lecture_9_pace_Early', 'lecture_9_pace_Late', 'lecture_9_pace_On-time', 'lecture_9_pace_Unknown', 'lecture_10_pace_Early', 'lecture_10_pace_Late', 'lecture_10_pace_On-time', 'lecture_10_pace_Unknown', 'lecture_11_pace_Early', 'lecture_11_pace_Late', 'lecture_11_pace_On-time', 'lecture_11_pace_Unknown', 'lecture_12_pace_Early', 'lecture_12_pace_Late', 'lecture_12_pace_On-time', 'lecture_12_pace_Unknown', 'lecture_13_pace_Early', 'lecture_13_pace_Late', 'lecture_13_pace_On-time', 'lecture_13_pace_Unknown', 'lecture_14_pace_Early', 'lecture_14_pace_Late', 'lecture_14_pace_On-time', 'lecture_14_pace_Unknown', 'lecture_15_pace_Early', 'lecture_15_pace_Late', 'lecture_15_pace_On-time', 'lecture_15_pace_Unknown', 'lecture_16_pace_Early', 'lecture_16_pace_Late', 'lecture_16_pace_On-time', 'lecture_16_pace_Unknown', 'lecture_17_pace_Early', 'lecture_17_pace_Late', 'lecture_17_pace_On-time', 'lecture_17_pace_Unknown', 'lecture_18_pace_Early', 'lecture_18_pace_Late', 'lecture_18_pace_On-time', 'lecture_18_pace_Unknown', 'lecture_19_pace_Early', 'lecture_19_pace_Late', 'lecture_19_pace_On-time', 'lecture_19_pace_Unknown', 'lecture_20_pace_Early', 'lecture_20_pace_Late', 'lecture_20_pace_On-time', 'lecture_20_pace_Unknown', 'lecture_21_pace_Early', 'lecture_21_pace_Late', 'lecture_21_pace_On-time', 'lecture_21_pace_Unknown', 'lecture_22_pace_Early', 'lecture_22_pace_Late', 'lecture_22_pace_On-time', 'lecture_22_pace_Unknown', 'lecture_23_pace_Early', 'lecture_23_pace_Late', 'lecture_23_pace_On-time', 'lecture_23_pace_Unknown', 'lecture_24_pace_Early', 'lecture_24_pace_Late', 'lecture_24_pace_On-time', 'lecture_24_pace_Unknown', 'lecture_25_pace_Early', 'lecture_25_pace_Late', 'lecture_25_pace_On-time', 'lecture_25_pace_Unknown', 'lecture_26_pace_Early', 'lecture_26_pace_Late', 'lecture_26_pace_On-time', 'lecture_26_pace_Unknown', 'overall_pace_Early', 'overall_pace_Late', 'overall_pace_On-time', 'overall_pace_Unknown'],
+        "Classmate Contact" : ['qtr_on_piazza', 'qtr_email', 'qtr_hipchat', 'qrt_gplus', 'qtr_other_chat', 'qtr_phone', 'qtr_facebook', 'qtr_in_person', 'mid_on_piazza', 'mid_email', 'mid_hipchat', 'qrt_gplus', 'mid_other_chat', 'mid_phone', 'mid_facebook', 'mid_in_person', 'final_on_piazza', 'final_email', 'final_hipchat', 'qrt_gplus', 'final_other_chat', 'final_phone', 'final_facebook', 'final_in_person'],
+        "Lecture Amount" : ['total_lecture_time', 'overal_lecture_views', 'lecture_1_views', 'lecture_2_views', 'lecture_3_views', 'lecture_4_views', 'lecture_5_views', 'lecture_6_views', 'lecture_7_views', 'lecture_8_views', 'lecture_9_views', 'lecture_10_views', 'lecture_11_views', 'lecture_12_views', 'lecture_13_views', 'lecture_14_views', 'lecture_15_views', 'lecture_16_views', 'lecture_17_views', 'lecture_18_views', 'lecture_19_views', 'lecture_20_views', 'lecture_21_views', 'lecture_22_views', 'lecture_23_views', 'lecture_24_views', 'lecture_25_views', 'lecture_26_views'],
+        "Prior Experience" : ['formal_class_prog_taken', 'C', 'C#', 'C++', 'Java', 'JavaScript', 'Lisp', 'Objective C', 'Perl', 'PHP', 'Python', 'Ruby', 'Shell', 'Swift', 'Visual Basic', 'Other (specify below)', 'years_programming', 'prior_omscs_classes_completed', 'occupation', 'highest_education', 'besides_KBAI_how_many_classes', 'moocs_completed_outside_OMSCS'],
         "Self Assesment" : ['qtr_proj1_confidence_neither confident nor unconfident', 'qtr_proj1_confidence_no answer', 'qtr_proj1_confidence_somewhat confident', 'qtr_proj1_confidence_somewhat unconfident', 'qtr_proj1_confidence_very confident', 'qtr_proj1_confidence_very unconfident', 'qtr_proj2_confidence_neither confident nor unconfident', 'qtr_proj2_confidence_no answer', 'qtr_proj2_confidence_somewhat confident', 'qtr_proj2_confidence_somewhat unconfident', 'qtr_proj2_confidence_very confident', 'qtr_proj2_confidence_very unconfident', 'mid_proj2_confidence_neither confident nor unconfident', 'mid_proj2_confidence_no answer', 'mid_proj2_confidence_somewhat confident', 'mid_proj2_confidence_somewhat unconfident', 'mid_proj2_confidence_very confident', 'mid_proj2_confidence_very unconfident', 'mid_proj3_confidence_neither confident nor unconfident', 'mid_proj3_confidence_no answer', 'mid_proj3_confidence_somewhat confident', 'mid_proj3_confidence_somewhat unconfident', 'mid_proj3_confidence_very confident', 'mid_proj3_confidence_very unconfident', 'final_proj3_confidence_neither confident nor unconfident', 'final_proj3_confidence_no answer', 'final_proj3_confidence_somewhat confident', 'final_proj3_confidence_somewhat unconfident', 'final_proj3_confidence_very confident', 'final_proj3_confidence_very unconfident']
     }
 
     #list the data sources
     data_sources = [
-        #"basic_data", 
-        #"basic_data_only_finishers", 
-        #"basic_data_clean_lecture", 
+        "basic_data", 
+        "basic_data_only_finishers", 
+        "basic_data_clean_lecture", 
         "basic_data_piazza",
-        #"basic_data_piazza_only_finishers"
+        "basic_data_piazza_only_finishers"
         ]
 
 
@@ -241,7 +263,7 @@ def main():
                 X_train, X_test = data_work.scale_features(X_train, X_test)
 
                 #test all to start
-                run_regressors(X_train, y_train, X_test, y_test, header_subset, writer, data_source + "-" + feature_set_name + "Linear")
+                run_regressors(X_train, y_train, X_test, y_test, header_subset, writer, data_source + "-" + feature_set_name + " Linear")
 
                 #for degree in [2, 3, 4]:
                 for degree in [2]:
@@ -251,7 +273,7 @@ def main():
                     X_test_poly = poly.fit_transform(X_test)
 
                     #test all in poly
-                    run_regressors(X_train_poly , y_train, X_test_poly, y_test, header_subset, writer, data_source + "-" + feature_set_name + "Poly %i" % degree)
+                    run_regressors(X_train_poly , y_train, X_test_poly, y_test, header_subset, writer, data_source + "-" + feature_set_name + " Poly %i" % degree)
 
                 ##test individually
                 #for i in range(0, X_train.shape[1]):
