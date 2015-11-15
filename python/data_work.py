@@ -1,4 +1,4 @@
-import math
+﻿import math
 import os
 import csv
 import numpy as np
@@ -72,6 +72,10 @@ def convert_survey_data(header, data):
     #label encoder converts categories to numerical values
     label_encoder = LabelEncoder()
     
+    #convert all text fields to lower case
+    data = np.char.lower(data)
+    header = np.char.lower(header)
+
     #loop through all the columns that are categorical data and convert
     encoder_indexes = []
     for i in category_indexes:
@@ -127,7 +131,7 @@ def select_data_columns(header, data, column_names = []):
     #get the index of the columns that match
     for i in range(len(column_names)):
         for j in range(len(header)):
-            if(header[j] == column_names[i]):
+            if(np.char.lower(header)[j] == np.char.lower(column_names)[i]):
                 column_indexes.append(j)
 
     sliced_header = np.take(header, column_indexes, axis = 0)
